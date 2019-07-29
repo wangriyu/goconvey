@@ -17,14 +17,16 @@ type Shell struct {
 	gobin          string
 	reportsPath    string
 	defaultTimeout string
+	customArgs     []string
 }
 
-func NewShell(gobin, reportsPath string, coverage bool, defaultTimeout string) *Shell {
+func NewShell(gobin, reportsPath string, coverage bool, defaultTimeout string, args []string) *Shell {
 	return &Shell{
 		coverage:       coverage,
 		gobin:          gobin,
 		reportsPath:    reportsPath,
 		defaultTimeout: defaultTimeout,
+		customArgs:     args,
 	}
 }
 
@@ -37,6 +39,7 @@ func (self *Shell) GoTest(directory, packageName string, tags, arguments []strin
 
 	goconvey := findGoConvey(directory, self.gobin, packageName, tagsArg).Execute()
 	compilation := compile(directory, self.gobin, tagsArg).Execute()
+	arguments = append(self.customArgs, arguments...)
 	withCoverage := runWithCoverage(compilation, goconvey, self.coverage, reportData, directory, self.gobin, self.defaultTimeout, tagsArg, arguments).Execute()
 	final := runWithoutCoverage(compilation, withCoverage, goconvey, directory, self.gobin, self.defaultTimeout, tagsArg, arguments).Execute()
 	go generateReports(final, self.coverage, directory, self.gobin, reportData, reportHTML).Execute()

@@ -38,6 +38,7 @@ func flags() {
 	flag.DurationVar(&nap, "poll", quarterSecond, "The interval to wait between polling the file system for changes.")
 	flag.IntVar(&parallelPackages, "packages", 10, "The number of packages to test in parallel. Higher == faster but more costly in terms of computing.")
 	flag.StringVar(&gobin, "gobin", "go", "The path to the 'go' binary (default: search on the PATH).")
+	flag.StringVar(&args, "args", "", "Global arguments(join with comma), e.g. set -gcflags to disable inline optimization.")
 	flag.BoolVar(&cover, "cover", true, "Enable package-level coverage statistics. Requires Go 1.2+ and the go cover tool.")
 	flag.IntVar(&depth, "depth", -1, "The directory scanning depth. If -1, scan infinitely deep directory structures. 0: scan working directory. 1+: Scan into nested directories, limited to value.")
 	flag.StringVar(&timeout, "timeout", "0", "The test execution timeout if none is specified in the *.goconvey file (default is '0', which is the same as not providing this option).")
@@ -58,11 +59,13 @@ func folders() {
 
 func main() {
 	flag.Parse()
+	customArgs := parseArgs()
+	log.Printf("Gloabal arguments: %+v\n", customArgs)
 	log.Printf(initialConfiguration, host, port, nap, cover)
 
 	working := getWorkDir()
 	cover = coverageEnabled(cover, reports)
-	shell := system.NewShell(gobin, reports, cover, timeout)
+	shell := system.NewShell(gobin, reports, cover, timeout, customArgs)
 
 	watcherInput := make(chan messaging.WatcherCommand)
 	watcherOutput := make(chan messaging.Folders)
@@ -262,6 +265,13 @@ func getWorkDir() string {
 	}
 	return working
 }
+func parseArgs() []string {
+	args = strings.TrimSpace(args)
+	if len(args) == 0 {
+		return make([]string, 0, 0)
+	}
+	return strings.Split(args, ",")
+}
 
 var (
 	port              int
@@ -270,6 +280,7 @@ var (
 	nap               time.Duration
 	parallelPackages  int
 	cover             bool
+	args              string
 	depth             int
 	timeout           string
 	watchedSuffixes   string
