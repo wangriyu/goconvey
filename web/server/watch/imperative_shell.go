@@ -38,7 +38,7 @@ func YieldFileSystemItems(root string, excludedDirs []string) chan *FileSystemIt
 				return filepath.SkipDir
 			}
 
-			basePath := filepath.Base(path)
+			basePath, _ := filepath.Rel(root, path)
 			for _, item := range excludedDirs {
 				if item == basePath && info.IsDir() && item != "" && basePath != "" {
 					return filepath.SkipDir
